@@ -51,6 +51,7 @@ import com.sun.net.httpserver.HttpServer;
 import javax.swing.SwingUtilities;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
@@ -122,7 +123,8 @@ public class GhidraMCPPlugin extends Plugin {
         });
 
         server.createContext("/decompile", exchange -> {
-            String name = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            byte[] bodyBytes = exchange.getRequestBody().readNBytes(4096);
+            String name = new String(bodyBytes, StandardCharsets.UTF_8);
             sendResponse(exchange, decompileFunctionByName(name));
         });
 
