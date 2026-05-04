@@ -497,18 +497,22 @@ public class GhidraMCPPlugin extends Plugin {
         if (program == null) return "No program loaded";
         DecompInterface decomp = new DecompInterface();
         decomp.openProgram(program);
-        for (Function func : program.getFunctionManager().getFunctions(true)) {
-            if (func.getName().equals(name)) {
-                DecompileResults result =
-                    decomp.decompileFunction(func, 30, new ConsoleTaskMonitor());
-                if (result != null && result.decompileCompleted()) {
-                    return result.getDecompiledFunction().getC();
-                } else {
-                    return "Decompilation failed";
+        try {
+            for (Function func : program.getFunctionManager().getFunctions(true)) {
+                if (func.getName().equals(name)) {
+                    DecompileResults result =
+                        decomp.decompileFunction(func, 30, new ConsoleTaskMonitor());
+                    if (result != null && result.decompileCompleted()) {
+                        return result.getDecompiledFunction().getC();
+                    } else {
+                        return "Decompilation failed";
+                    }
                 }
             }
+            return "Function not found";
+        } finally {
+            decomp.dispose();
         }
-        return "Function not found";
     }
 
     private boolean renameFunction(String oldName, String newName) {
@@ -580,9 +584,6 @@ public class GhidraMCPPlugin extends Plugin {
         Program program = getCurrentProgram();
         if (program == null) return "No program loaded";
 
-        DecompInterface decomp = new DecompInterface();
-        decomp.openProgram(program);
-
         Function func = null;
         for (Function f : program.getFunctionManager().getFunctions(true)) {
             if (f.getName().equals(functionName)) {
@@ -594,6 +595,10 @@ public class GhidraMCPPlugin extends Plugin {
         if (func == null) {
             return "Function not found";
         }
+
+        DecompInterface decomp = new DecompInterface();
+        decomp.openProgram(program);
+        try {
 
         DecompileResults result = decomp.decompileFunction(func, 30, new ConsoleTaskMonitor());
         if (result == null || !result.decompileCompleted()) {
@@ -663,6 +668,9 @@ public class GhidraMCPPlugin extends Plugin {
             return errorMsg;
         }
         return successFlag.get() ? "Variable renamed" : "Failed to rename variable";
+        } finally {
+            decomp.dispose();
+        }
     }
 
     /**
@@ -808,11 +816,14 @@ public class GhidraMCPPlugin extends Plugin {
 
             DecompInterface decomp = new DecompInterface();
             decomp.openProgram(program);
-            DecompileResults result = decomp.decompileFunction(func, 30, new ConsoleTaskMonitor());
-
-            return (result != null && result.decompileCompleted()) 
-                ? result.getDecompiledFunction().getC() 
-                : "Decompilation failed";
+            try {
+                DecompileResults result = decomp.decompileFunction(func, 30, new ConsoleTaskMonitor());
+                return (result != null && result.decompileCompleted()) 
+                    ? result.getDecompiledFunction().getC() 
+                    : "Decompilation failed";
+            } finally {
+                decomp.dispose();
+            }
         } catch (Exception e) {
             return "Error decompiling function: " + e.getMessage();
         }
@@ -1212,6 +1223,7 @@ public class GhidraMCPPlugin extends Plugin {
 
         // Decompile the function
         DecompileResults results = decomp.decompileFunction(func, 60, new ConsoleTaskMonitor());
+        decomp.dispose();
 
         if (!results.decompileCompleted()) {
             Msg.error(this, "Could not decompile function: " + results.getErrorMessage());
@@ -1542,7 +1554,7 @@ public class GhidraMCPPlugin extends Plugin {
         if (query != null) {
             String[] pairs = query.split("&");
             for (String p : pairs) {
-                String[] kv = p.split("=");
+                String[] kv = p.split("=", 2);
                 if (kv.length == 2) {
                     // URL decode parameter values
                     try {
@@ -1562,11 +1574,11 @@ public class GhidraMCPPlugin extends Plugin {
      * Parse post body form params, e.g. oldName=foo&newName=bar
      */
     private Map<String, String> parsePostParams(HttpExchange exchange) throws IOException {
-        byte[] body = exchange.getRequestBody().readAllBytes();
+        byte[] body = exchange.getRequestBody().readNBytes(65536);
         String bodyStr = new String(body, StandardCharsets.UTF_8);
         Map<String, String> params = new HashMap<>();
         for (String pair : bodyStr.split("&")) {
-            String[] kv = pair.split("=");
+            String[] kv = pair.split("=", 2);
             if (kv.length == 2) {
                 // URL decode parameter values
                 try {
