@@ -105,7 +105,7 @@ public class GhidraMCPPlugin extends Plugin {
             server = null;
         }
 
-        server = HttpServer.create(new InetSocketAddress(port), 0);
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
 
         // Each listing endpoint uses offset & limit from query params:
         server.createContext("/methods", exchange -> {
@@ -124,7 +124,7 @@ public class GhidraMCPPlugin extends Plugin {
 
         server.createContext("/decompile", exchange -> {
             byte[] bodyBytes = exchange.getRequestBody().readNBytes(4096);
-            String name = new String(bodyBytes, StandardCharsets.UTF_8);
+            String name = new String(bodyBytes, StandardCharsets.UTF_8).trim();
             sendResponse(exchange, decompileFunctionByName(name));
         });
 
