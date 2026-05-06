@@ -134,6 +134,9 @@
           
           <!-- Don't append the assembly ID -->
           <appendAssemblyId>false</appendAssemblyId>
+
+          <!-- Output each version's ZIP to its own subfolder -->
+          <outputDirectory>${project.basedir}/releases/${project.version}</outputDirectory>
         </configuration>
         
         <executions>

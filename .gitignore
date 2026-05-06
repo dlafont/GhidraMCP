@@ -4,6 +4,9 @@
 # Ghidra installation (extracted locally for development)
 /ghidra_*/
 
+# Local versioned release outputs (artifacts go to GitHub Releases)
+/releases/
+
 # Compiled class files
 *.class
 
